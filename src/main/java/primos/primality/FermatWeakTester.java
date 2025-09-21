@@ -36,8 +36,7 @@ public class FermatWeakTester extends FermatTester {
             BigInteger a = getRandomBase(n);
 
             // Se a base 'a' compartilha um fator com 'n', ela poderia revelar
-            // que 'n' é composto. Para demonstrar a fraqueza, nós ignoramos
-            // essa base e pulamos para a próxima tentativa.
+            // que 'n' é composto.
             if (!a.gcd(n).equals(ONE)) {
                 continue;
             }

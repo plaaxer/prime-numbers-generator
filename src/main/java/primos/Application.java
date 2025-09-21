@@ -36,13 +36,13 @@ public class Application {
 
     private static void carmichaelTesting() {
         BigInteger carmichaelNumber = BigInteger.valueOf(1729);
-        int certainty = 100;
+        int certainty = 200;
 
         PrimalityTester millerRabin = new MillerRabinTester();
         PrimalityTester fermat = new FermatWeakTester();
 
         boolean millerRabinResult = millerRabin.isPrime(carmichaelNumber, certainty);
-        System.out.println("Miller-Rabin diz que é primo? " + millerRabinResult); // Esperado: false
+        System.out.println("Miller-Rabin diz que é primo? " + millerRabinResult);
 
         boolean fermatResult = fermat.isPrime(carmichaelNumber, certainty);
         System.out.println("Fermat diz que é primo? " + fermatResult);
