@@ -47,7 +47,6 @@ public class Application {
         boolean fermatResult = fermat.isPrime(carmichaelNumber, certainty);
         System.out.println("Fermat diz que é primo? " + fermatResult);
 
-        System.out.println("r:  " + fermat.isPrime(BigInteger.probablePrime(256, new Random()), 200));
     }
 
     /**
