@@ -2,6 +2,7 @@ package primos;
 
 import primos.generators.BbsGenerator;
 import primos.generators.LcgGenerator;
+import primos.generators.PseudoRandomGenerator;
 import primos.primality.FermatTester;
 import primos.primality.FermatWeakTester;
 import primos.primality.MillerRabinTester;
@@ -17,7 +18,11 @@ import static primos.ExperimentRunner.*;
 public class Application {
 
     public static void main(String[] args) {
+        //runTests();
 
+    }
+
+    private static void runTests() {
         List<Integer> bitLengths = List.of(40, 56, 80, 128, 256, 512, 1024, 2048, 4096);
 
         int numbersToGenerate = 5000;
@@ -36,8 +41,7 @@ public class Application {
 
         //benchmarkPrimalityTestLCG(bitLengths, certainty, FermatTester.class);
 
-        benchmarkPrimalityTestLCG(bitLengths, certainty, MillerRabinTester.class);
-
+        //benchmarkPrimalityTestLCG(bitLengths, certainty, MillerRabinTester.class)
     }
 
     private static void carmichaelTesting() {

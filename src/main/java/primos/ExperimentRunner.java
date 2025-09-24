@@ -13,6 +13,48 @@ public class ExperimentRunner {
     public static final int BATCHSIZE = 10;
 
     /**
+     * Busca e RETORNA um número provavelmente primo de um determinado tamanho.
+     * <p>
+     * Este método executa a busca sem imprimir informações de benchmark no console.
+     *
+     * @param testerClass    A CLASSE do testador de primalidade.
+     * @param generatorClass A CLASSE do gerador de números.
+     * @param bitLength      Tamanho em bits do primo desejado.
+     * @param certainty      Parâmetro de certeza para o teste de primalidade.
+     * @return Um {@link BigInteger} que é provavelmente primo.
+     * @throws ReflectiveOperationException se houver um erro ao instanciar as classes via reflexão.
+     */
+    public static <T extends PrimalityTester, R extends PseudoRandomGenerator> BigInteger findPrime(
+            Class<T> testerClass,
+            Class<R> generatorClass,
+            int bitLength,
+            int certainty) throws ReflectiveOperationException {
+
+        PrimalityTester tester = testerClass.getDeclaredConstructor().newInstance();
+        PseudoRandomGenerator generator = generatorClass.getDeclaredConstructor(int.class).newInstance(bitLength);
+
+        BigInteger primeCandidate;
+
+        // 2. Loop de busca infinito até que um primo seja encontrado.
+        while (true) {
+            // Gera um lote de candidatos e pega o último
+            List<BigInteger> candidates = generator.generate(BATCHSIZE);
+            primeCandidate = candidates.get(candidates.size() - 1);
+
+            // Garante que o candidato seja ímpar
+            if (!primeCandidate.testBit(0)) {
+                primeCandidate = primeCandidate.setBit(0);
+            }
+
+            // Testa a primalidade
+            if (tester.isPrime(primeCandidate, certainty)) {
+                // 3. Se for primo, RETORNA o número e o método termina aqui.
+                return primeCandidate;
+            }
+        }
+    }
+
+    /**
      * Executa o teste para um gerador específico, mede o tempo e imprime os resultados.
      * @param generator A instância do gerador a ser testado.
      * @param bitLength O tamanho em bits dos números gerados.
@@ -233,4 +275,5 @@ public class ExperimentRunner {
         }
         System.out.println("Aquecimento do testador concluído.");
     }
+
 }
