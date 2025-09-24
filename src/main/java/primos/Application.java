@@ -20,7 +20,7 @@ public class Application {
 
         List<Integer> bitLengths = List.of(40, 56, 80, 128, 256, 512, 1024, 2048, 4096);
 
-        int numbersToGenerate = 1000;
+        int numbersToGenerate = 5000;
 
         int certainty = 200;
 
@@ -30,7 +30,13 @@ public class Application {
 
         //verifyMillerRabin(bitLengths, certainty);
 
-        carmichaelTesting();
+        //verifyFermat(bitLengths, certainty);
+
+        //carmichaelTesting();
+
+        //benchmarkPrimalityTestLCG(bitLengths, certainty, FermatTester.class);
+
+        benchmarkPrimalityTestLCG(bitLengths, certainty, MillerRabinTester.class);
 
     }
 
@@ -64,6 +70,21 @@ public class Application {
             runPrimalityTest(MillerRabinTester.class, LcgGenerator.class, bitLength, certainty);
         }
     }
+    /**
+     * Busca gerar um número pseudo-aleatório, provavelmente primo, utilizando Lcg e Fermat.
+     * Obs: a quantidade de números gerados pelo lcg está fixado em {@link primos.ExperimentRunner#BATCHSIZE}
+     * @param bitLengths Os tamanhos de número desejados.
+     * @param certainty Número de iterações no teste de Fermat.
+     */
+    private static void verifyFermat(List<Integer> bitLengths, int certainty) {
+        List<Integer> reduced = new ArrayList<>(bitLengths.subList(0, bitLengths.size() - 2));
+        prepareJit(LcgGenerator.class, bitLengths, BATCHSIZE);
+        prepareJitForTester(FermatTester.class, LcgGenerator.class, reduced, certainty);
+
+        for (int bitLength : bitLengths) {
+            runPrimalityTest(FermatTester.class, LcgGenerator.class, bitLength, certainty);
+        }
+    }
 
     private static void generateLcg(List<Integer> bitLengths, int numbersToGenerate) {
         prepareJit(LcgGenerator.class, bitLengths, numbersToGenerate);
@@ -79,6 +100,24 @@ public class Application {
 
         for (int bitLength : bitLengths) {
             runFor(new BbsGenerator(bitLength), bitLength, numbersToGenerate);
+        }
+    }
+
+    private static <T extends PrimalityTester> void benchmarkPrimalityTestLCG(List<Integer> bitLengths, int certainty, Class<T> clazz) {
+        List<Integer> reduced = new ArrayList<>(bitLengths.subList(0, bitLengths.size() - 2));
+
+        prepareJitForTester(clazz, LcgGenerator.class, reduced, 500);
+        for (int bitLength : bitLengths) {
+            benchmarkPrimalityTester(clazz, LcgGenerator.class, bitLength, certainty, 100);
+        }
+    }
+
+    private static <T extends PrimalityTester> void benchmarkPrimalityTestBBS(List<Integer> bitLengths, int certainty, Class<T> clazz) {
+        List<Integer> reduced = new ArrayList<>(bitLengths.subList(0, bitLengths.size() - 2));
+
+        prepareJitForTester(clazz, LcgGenerator.class, reduced, 500);
+        for (int bitLength : bitLengths) {
+            benchmarkPrimalityTester(clazz, BbsGenerator.class, bitLength, certainty, 100);
         }
     }
 

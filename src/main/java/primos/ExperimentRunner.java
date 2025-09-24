@@ -28,8 +28,8 @@ public class ExperimentRunner {
         double totalTimeMs = totalTimeNs / 1_000_000.0; // ms
         long averageTimeNs = totalTimeNs / count;
 
-        System.out.println("Primeiro gerado: " + result.get(0));
-        System.out.println("Último gerado: " + result.get(result.size() - 1));
+//        System.out.println("Primeiro gerado: " + result.get(0));
+//        System.out.println("Último gerado: " + result.get(result.size() - 1));
 
         System.out.printf("%-25s | %-12d | %-20.4f | %-20d%n",
                 generator.name(), bitLength, totalTimeMs, averageTimeNs);
@@ -141,6 +141,66 @@ public class ExperimentRunner {
 
         } catch (Exception e) {
             System.err.println("ERRO: Falha ao instanciar gerador ou testador via reflexão.");
+        }
+    }
+
+    /**
+     * Executa um benchmark para um testador de primalidade, medindo o tempo médio de execução de uma verificação.
+     * <p>
+     * O processo consiste em:
+     * 1. Gerar um número candidato ímpar de um determinado tamanho de bits.
+     * 2. Cronometrar APENAS a chamada ao método {@code tester.isPrime()}.
+     * 3. Repetir o processo um número fixo de vezes para obter uma média estável.
+     * <p>
+     * O tempo reportado corresponde ao tempo médio de UMA verificação de primalidade.
+     *
+     * @param testerClass     A CLASSE do testador de primalidade a ser medido (ex: MillerRabinTester.class).
+     * @param generatorClass  A CLASSE do gerador usado para fornecer números para o teste (ex: LcgGenerator.class).
+     * @param bitLength       O tamanho em bits dos números a serem testados.
+     * @param certainty       O parâmetro de certeza para os testes de primalidade.
+     * @param numberOfTests   O número de testes a serem executados para calcular a média.
+     * @param <T>             Um tipo que implementa PrimalityTester.
+     * @param <R>             Um tipo que implementa PseudoRandomGenerator.
+     */
+    public static <T extends PrimalityTester, R extends PseudoRandomGenerator> void benchmarkPrimalityTester(
+            Class<T> testerClass,
+            Class<R> generatorClass,
+            int bitLength,
+            int certainty,
+            int numberOfTests) {
+
+        try {
+            // Instancia os objetos a partir de suas classes
+            PrimalityTester tester = testerClass.getDeclaredConstructor().newInstance();
+            PseudoRandomGenerator generator = generatorClass.getDeclaredConstructor(int.class).newInstance(bitLength);
+
+            long totalTestTimeNs = 0;
+
+            // Executa um número fixo de testes para obter a média
+            for (int i = 0; i < numberOfTests; i++) {
+                // Gera um único candidato e garante que seja ímpar
+                BigInteger candidate = generator.generate(1).get(0).setBit(0);
+
+                // Cronometra apenas a chamada ao método isPrime
+                long startTime = System.nanoTime();
+                tester.isPrime(candidate, certainty);
+                long endTime = System.nanoTime();
+
+                totalTestTimeNs += (endTime - startTime);
+            }
+
+            // Calcula o tempo médio por teste
+            double averageTimeMs = (double) totalTestTimeNs / numberOfTests / 1_000_000.0;
+
+            System.out.printf("%-25s | %-12d | %-12d | %-20.4f%n",
+                    testerClass.getSimpleName(),
+                    bitLength,
+                    numberOfTests,
+                    totalTestTimeNs/1_000_000.0);
+
+        } catch (Exception e) {
+            System.err.println("ERRO: Falha ao instanciar gerador ou testador via reflexão.");
+            e.printStackTrace();
         }
     }
 

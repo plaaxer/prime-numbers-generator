@@ -9,8 +9,6 @@ import java.util.Random;
  * Este é um teste probabilístico eficiente para determinar se um número grande é
  * provavelmente primo. É o algoritmo mais utilizado na prática para essa finalidade.
  * <p>
- * Referência: Cormen, T. H., Leiserson, C. E., Rivest, R. L., & Stein, C. (2009).
- * Introduction to Algorithms (3rd ed.). MIT Press. (Capítulo 31.8).
  */
 public class MillerRabinTester implements PrimalityTester {
 
