@@ -9,30 +9,46 @@ import primos.primality.MillerRabinTester;
 import primos.primality.PrimalityTester;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.ArrayList;
-import java.util.Random;
 
 import static primos.ExperimentRunner.*;
 
-public class Application {
+public class Main {
 
     public static void main(String[] args) {
 
-
         List<String> argList = new ArrayList<>(Arrays.asList(args));
         boolean truncateOutput = true;
+
+        List<String> statisticalTestsToRun = new ArrayList<>();
+
+        if (argList.remove("-stat-all")) {
+            statisticalTestsToRun.add("freq");
+            statisticalTestsToRun.add("runs");
+            statisticalTestsToRun.add("poker");
+
+        } else {
+
+            if (argList.remove("-stat-freq")) {
+                statisticalTestsToRun.add("freq");
+            }
+            if (argList.remove("-stat-runs")) {
+                statisticalTestsToRun.add("runs");
+            }
+            if (argList.remove("-stat-poker")) {
+                statisticalTestsToRun.add("poker");
+            }
+        }
 
         if (argList.contains("-t")) {
             runTests();
             return;
         }
 
-
-        if (argList.contains("-nt")) {
+        if (argList.remove("-nt")) {
             truncateOutput = false;
-            argList.remove("-nt");
         }
 
         if (argList.size() != 4) {
@@ -40,8 +56,12 @@ public class Application {
             return;
         }
 
+        String generatorName = argList.get(0);
+        String testerName = argList.get(1);
+        String bitLengthStr = argList.get(2);
+        String certaintyStr = argList.get(3);
+
         Class<? extends PseudoRandomGenerator> generatorClass = null;
-        String generatorName = args[0];
         if ("lcg".equalsIgnoreCase(generatorName)) {
             generatorClass = LcgGenerator.class;
         } else if ("bbs".equalsIgnoreCase(generatorName)) {
@@ -53,7 +73,6 @@ public class Application {
         }
 
         Class<? extends PrimalityTester> testerClass = null;
-        String testerName = args[1];
         if ("millerrabin".equalsIgnoreCase(testerName)) {
             testerClass = MillerRabinTester.class;
         } else if ("fermat".equalsIgnoreCase(testerName)) {
@@ -67,8 +86,8 @@ public class Application {
         int bitLength;
         int certainty;
         try {
-            bitLength = Integer.parseInt(args[2]);
-            certainty = Integer.parseInt(args[3]);
+            bitLength = Integer.parseInt(bitLengthStr);
+            certainty = Integer.parseInt(certaintyStr);
         } catch (NumberFormatException e) {
             System.err.println("ERRO: O tamanho em bits e a certeza devem ser números inteiros.");
             printUsage();
@@ -80,11 +99,9 @@ public class Application {
         System.out.println(" -> Usando testador: " + testerClass.getSimpleName());
 
         try {
-
             long startTime = System.nanoTime();
 
-            // função que retorna o primo
-            BigInteger foundPrime = ExperimentRunner.findPrime(
+            BigInteger foundPrime = findPrime(
                     testerClass,
                     generatorClass,
                     bitLength,
@@ -98,7 +115,6 @@ public class Application {
             System.out.printf("Tempo total da busca: %.4f ms%n", totalTimeMs);
 
             if (truncateOutput && foundPrime.toString().length() > 70) {
-                // versão truncada do primo encontrado
                 String primeString = foundPrime.toString();
                 primeString = primeString.substring(0, 35) + "..." + primeString.substring(primeString.length() - 35);
                 System.out.println("Primo encontrado: " + primeString);
@@ -106,8 +122,31 @@ public class Application {
                 System.out.println("Primo encontrado: " + foundPrime);
             }
 
+            // testes estatísticos
+            if (!statisticalTestsToRun.isEmpty()) {
+                System.out.println("\n--- INICIANDO TESTES ESTATÍSTICOS ---");
+                for (String test : statisticalTestsToRun) {
+                    switch (test) {
+                        case "freq":
+                            System.out.println(BigIntegerStatisticalTests.frequencyTest(foundPrime));
+                            break;
+                        case "runs":
+                            System.out.println(BigIntegerStatisticalTests.runsTest(foundPrime));
+                            break;
+                        case "poker":
+                            // Roda o teste com um tamanho de bloco padrão de 4 bits
+                            System.out.println(BigIntegerStatisticalTests.pokerTest(foundPrime, 4));
+                            // Se o primo for grande, roda também com blocos de 8 bits para uma análise mais detalhada
+                            if (bitLength >= 512) {
+                                System.out.println(BigIntegerStatisticalTests.pokerTest(foundPrime, 8));
+                            }
+                            break;
+                    }
+                }
+            }
+
         } catch (Exception e) {
-            System.err.println("Ocorreu um erro fatal durante a execução:");
+            System.err.println("Ocorreu um erro durante a execução:");
             e.printStackTrace();
         }
     }
@@ -116,12 +155,22 @@ public class Application {
      * Imprime as instruções de uso do programa no console.
      */
     private static void printUsage() {
-        System.err.println("\nUso: java Main <gerador> <testador> <bits> <certeza>");
-        System.err.println("  <gerador>: LCG | BBS");
-        System.err.println("  <testador>: MillerRabin | Fermat");
-        System.err.println("  <bits>: O número de bits do primo (ex: 128)");
-        System.err.println("  <certeza>: O número de iterações do teste (ex: 100)");
-        System.err.println("\nExemplo: java Main BBS MillerRabin 256 100");
+        // ALTERAÇÃO: Instruções de uso atualizadas com as novas flags.
+        System.err.println("\nUso: java Main [opções] <gerador> <testador> <bits> <certeza>");
+        System.err.println("\nArgumentos Obrigatórios:");
+        System.err.println("  <gerador>    LCG | BBS");
+        System.err.println("  <testador>   MillerRabin | Fermat");
+        System.err.println("  <bits>       O número de bits do primo (ex: 256)");
+        System.err.println("  <certeza>    O número de iterações do teste (ex: 100)");
+        System.err.println("\nOpções:");
+        System.err.println("  -nt          Não truncar a saída do número primo encontrado.");
+        System.err.println("  -t           Executa uma série de benchmarks pré-definidos e encerra.");
+        System.err.println("  -stat-freq   Executa o Teste de Frequência.");
+        System.err.println("  -stat-runs   Executa o Teste de Runs.");
+        System.err.println("  -stat-poker  Executa o Teste de Pôquer.");
+        System.err.println("  -stat-all    Executa todos os testes estatísticos.");
+        System.err.println("\nExemplo de uso com testes estatísticos:");
+        System.err.println("  java Main -stat-all BBS MillerRabin 256 100");
     }
 
     private static void runTests() {
